@@ -1,0 +1,8 @@
+## Interface: 120000
+## Title: Role Check Timer
+## Notes: Shows a movable countdown for Dungeon Finder role checks.
+## Author: Alex
+## Version: 1.0.0
+## SavedVariables: RoleCheckTimerDB
+
+RoleCheckTimer.lua
