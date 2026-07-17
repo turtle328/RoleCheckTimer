@@ -29,7 +29,7 @@ frame:SetBackdropBorderColor(0.35, 0.35, 0.35, 1)
 
 local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 title:SetPoint("TOP", 0, -7)
-title:SetText("Dungeon Ready Check")
+title:SetText("Dungeon Queue Ready")
 
 local statusBar = CreateFrame("StatusBar", nil, frame)
 statusBar:SetPoint("BOTTOMLEFT", 10, 10)
@@ -77,7 +77,7 @@ end
 local function StartTimer(label)
     active = true
     endTime = GetTime() + CHECK_SECONDS
-    title:SetText(label or "Dungeon Ready Check")
+    title:SetText(label or "Dungeon Queue Ready")
     statusBar:SetMinMaxValues(0, CHECK_SECONDS)
     statusBar:SetValue(CHECK_SECONDS)
     countdown:SetText("30.0")
@@ -101,19 +101,19 @@ end
 local events = CreateFrame("Frame")
 events:RegisterEvent("ADDON_LOADED")
 
--- The queue popup the user sees before matchmaking uses READY_CHECK events.
+-- Fired when the matched dungeon invite with Accept/Decline appears.
+events:RegisterEvent("LFG_PROPOSAL_SHOW")
+events:RegisterEvent("LFG_PROPOSAL_DONE")
+events:RegisterEvent("LFG_PROPOSAL_FAILED")
+events:RegisterEvent("LFG_PROPOSAL_SUCCEEDED")
+
+-- Retain support for earlier LFG stages.
 events:RegisterEvent("LFG_READY_CHECK_SHOW")
 events:RegisterEvent("LFG_READY_CHECK_HIDE")
 events:RegisterEvent("LFG_READY_CHECK_DECLINED")
-events:RegisterEvent("LFG_READY_CHECK_PLAYER_IS_READY")
-events:RegisterEvent("LFG_READY_CHECK_UPDATE")
-
--- Keep role-check support as well for group composition checks.
 events:RegisterEvent("LFG_ROLE_CHECK_SHOW")
 events:RegisterEvent("LFG_ROLE_CHECK_HIDE")
 events:RegisterEvent("LFG_ROLE_CHECK_DECLINED")
-events:RegisterEvent("LFG_ROLE_CHECK_ROLE_CHOSEN")
-events:RegisterEvent("LFG_ROLE_CHECK_UPDATE")
 
 events:SetScript("OnEvent", function(_, event, arg1)
     if event == "ADDON_LOADED" then
@@ -124,11 +124,16 @@ events:SetScript("OnEvent", function(_, event, arg1)
         return
     end
 
-    if event == "LFG_READY_CHECK_SHOW" then
+    if event == "LFG_PROPOSAL_SHOW" then
+        StartTimer("Dungeon Queue Ready")
+    elseif event == "LFG_READY_CHECK_SHOW" then
         StartTimer("Dungeon Ready Check")
     elseif event == "LFG_ROLE_CHECK_SHOW" then
         StartTimer("Dungeon Role Check")
-    elseif event == "LFG_READY_CHECK_HIDE"
+    elseif event == "LFG_PROPOSAL_DONE"
+        or event == "LFG_PROPOSAL_FAILED"
+        or event == "LFG_PROPOSAL_SUCCEEDED"
+        or event == "LFG_READY_CHECK_HIDE"
         or event == "LFG_READY_CHECK_DECLINED"
         or event == "LFG_ROLE_CHECK_HIDE"
         or event == "LFG_ROLE_CHECK_DECLINED" then
@@ -141,7 +146,7 @@ SlashCmdList.ROLECHECKTIMER = function(msg)
     msg = (msg or ""):lower():match("^%s*(.-)%s*$")
 
     if msg == "test" then
-        StartTimer("Dungeon Ready Check (Test)")
+        StartTimer("Dungeon Queue Ready (Test)")
     elseif msg == "stop" then
         StopTimer()
     elseif msg == "reset" then
