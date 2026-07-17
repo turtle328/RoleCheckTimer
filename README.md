@@ -4,7 +4,34 @@ A small World of Warcraft addon that shows a movable 30-second countdown when a 
 
 It does **not** choose a role or accept the role check for you.
 
-## Installation
+## Quick installation on Windows
+
+1. Download or clone this repository.
+2. Open PowerShell in the repository folder.
+3. Run:
+
+   ```powershell
+   .\Install.ps1
+   ```
+
+The script searches the common World of Warcraft install locations and copies the addon files into:
+
+`World of Warcraft\_retail_\Interface\AddOns\RoleCheckTimer\`
+
+For a custom installation location, provide the main World of Warcraft folder or the `_retail_` folder:
+
+```powershell
+.\Install.ps1 -WowPath "D:\Games\World of Warcraft"
+```
+
+You may need to allow the script for the current PowerShell session:
+
+```powershell
+Set-ExecutionPolicy -Scope Process Bypass
+.\Install.ps1
+```
+
+## Manual installation
 
 1. Exit World of Warcraft.
 2. Download or clone this repository.
