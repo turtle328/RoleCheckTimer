@@ -13,29 +13,63 @@ if (-not (Test-Path (Join-Path $sourceDir "RoleCheckTimer.toc")) -or
     throw "Run this script from the RoleCheckTimer repository folder."
 }
 
-if ($WowPath) {
-    $retailDir = Join-Path $WowPath "_retail_"
-    if ((Split-Path $WowPath -Leaf) -eq "_retail_") {
-        $retailDir = $WowPath
+function Get-RetailFolder {
+    param([string]$ExplicitWowPath)
+
+    if ($ExplicitWowPath) {
+        $resolved = $ExplicitWowPath
+        if ((Split-Path $resolved -Leaf) -ne "_retail_") {
+            $resolved = Join-Path $resolved "_retail_"
+        }
+
+        if (-not (Test-Path $resolved)) {
+            throw "Retail folder not found: $resolved"
+        }
+
+        return (Resolve-Path $resolved).Path
     }
-} else {
-    $candidates = @(
-        "${env:ProgramFiles(x86)}\World of Warcraft\_retail_",
-        "$env:ProgramFiles\World of Warcraft\_retail_",
-        "C:\World of Warcraft\_retail_"
-    ) | Where-Object { $_ -and (Test-Path $_) }
+
+    $relativeCandidates = @(
+        "World of Warcraft\_retail_",
+        "Games\World of Warcraft\_retail_",
+        "Program Files (x86)\World of Warcraft\_retail_",
+        "Program Files\World of Warcraft\_retail_"
+    )
+
+    $candidates = foreach ($drive in Get-PSDrive -PSProvider FileSystem) {
+        foreach ($relativePath in $relativeCandidates) {
+            $candidate = Join-Path $drive.Root $relativePath
+            if (Test-Path $candidate) {
+                (Resolve-Path $candidate).Path
+            }
+        }
+    }
+
+    $candidates = @($candidates | Sort-Object -Unique)
 
     if ($candidates.Count -eq 0) {
-        throw "World of Warcraft Retail was not found automatically. Re-run with: .\Install.ps1 -WowPath 'D:\Games\World of Warcraft'"
+        throw "World of Warcraft Retail was not found on any mounted drive. Re-run with: .\Install.ps1 -WowPath 'E:\World of Warcraft'"
     }
 
-    $retailDir = $candidates[0]
+    if ($candidates.Count -eq 1) {
+        return $candidates[0]
+    }
+
+    Write-Host "Multiple Retail installations were found:" -ForegroundColor Yellow
+    for ($i = 0; $i -lt $candidates.Count; $i++) {
+        Write-Host "[$($i + 1)] $($candidates[$i])"
+    }
+
+    do {
+        $selection = Read-Host "Choose an installation (1-$($candidates.Count))"
+        $index = 0
+        $valid = [int]::TryParse($selection, [ref]$index) -and $index -ge 1 -and $index -le $candidates.Count
+    } until ($valid)
+
+    return $candidates[$index - 1]
 }
 
-if (-not (Test-Path $retailDir)) {
-    throw "Retail folder not found: $retailDir"
-}
-
+$retailDir = Get-RetailFolder -ExplicitWowPath $WowPath
 $addonsDir = Join-Path $retailDir "Interface\AddOns"
 $destination = Join-Path $addonsDir $addonName
 
